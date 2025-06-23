@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
 import { decode, sign, verify } from 'hono/jwt'
 import bcrypt from 'bcryptjs';
+import { signinInput, singupInput} from '@aditya.sharma._/medium-common';
+
 
 type HonoEnv = {
 	DATABASE_URL: string,
@@ -17,7 +19,10 @@ userRouter.post('/signup', async (c) => {
 	}).$extends(withAccelerate())
 
 	const body = await c.req.json()
-
+	if (!singupInput.safeParse(body).success) {
+		c.status(400);
+		return c.json({ error: "Invalid input" });
+	}
 	const user = await prisma.user.create ({
 		data: {
 			email: body.email,
@@ -40,10 +45,11 @@ userRouter.post('/api/v1/signin', async (c) => {
 	}).$extends(withAccelerate());
 
 	const body = await c.req.json();
-	if (!body.email || !body.password) {
+	if (!signinInput.safeParse(body).success) {
 		c.status(400);
-		return c.json({ error: "email and password are required" });
+		return c.json({ error: "Invalid input" });
 	}
+
 
 	const user = await prisma.user.findUnique({
 		where: {
